@@ -9,14 +9,12 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 
 class MedicamentoResource extends Resource
 {
     protected static ?string $model = Medicamento::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-beaker';
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     protected static ?string $navigationLabel = 'Medicamentos';
 
@@ -24,17 +22,7 @@ class MedicamentoResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Medicamentos';
 
-    protected static ?string $navigationGroup = 'Estoque';
-
-    protected static ?int $navigationSort = 1;
-
-    // Cor primária da Pharma-Store: Verde #16A34A
     protected static ?string $navigationBadgeColor = 'success';
-
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::where('quantidade', '<', 10)->count() ?: null;
-    }
 
     public static function getNavigationBadgeTooltip(): ?string
     {
@@ -42,76 +30,70 @@ class MedicamentoResource extends Resource
     }
 
     public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                // ── Seção: Identificação ────────────────────────────────
-                Forms\Components\Section::make('Identificação do Produto')
-                    ->icon('heroicon-o-identification')
-                    ->schema([
-                        Forms\Components\TextInput::make('codigo')
-                            ->label('Código / ID')
-                            ->required()
-                            ->unique(ignoreRecord: true)
-                            ->maxLength(50)
-                            ->placeholder('EX: MED-0001'),
+{
+    return $form
+        ->schema([
+            // ── Identificação ───────────────────────────────────────
+            Forms\Components\Section::make('Identificação do Produto')
+                ->schema([
+                    Forms\Components\TextInput::make('codigo')
+                        ->label('Código / ID')
+                        ->required()
+                        ->unique(ignoreRecord: true)
+                        ->maxLength(50)
+                        ->placeholder('Ex: MED-0001'),
 
-                        Forms\Components\TextInput::make('nome')
-                            ->label('Nome do Produto')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('Ex: Dipirona Monoidratada 500mg'),
+                    Forms\Components\TextInput::make('nome')
+                        ->label('Nome do Produto')
+                        ->required()
+                        ->maxLength(255)
+                        ->placeholder('Ex: Dipirona Monoidratada 500mg'),
 
-                
+                    Forms\Components\Select::make('tipo')
+                        ->label('Tipo')
+                        ->options([
+                            'medicamento' => 'Medicamento',
+                            'perfumaria'  => 'Perfumaria',
+                        ])
+                        ->default('medicamento')
+                        ->required(),
+                ])
+                ->columns(2),
 
-                        Forms\Components\TextInput::make('principio_ativo')
-                            ->label('Princípio Ativo')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('Ex: EMS Sigma Pharma'),
-                    ])
-                    ->columns(2),
+            // ── Fabricante & Lote ───────────────────────────────────
+            Forms\Components\Section::make('Fabricante & Lote')
+                ->schema([
+                    Forms\Components\TextInput::make('fabricante')
+                        ->label('Fabricante / Fornecedor')
+                        ->required()
+                        ->maxLength(100)
+                        ->placeholder('Ex: Cimed'),
+                ])
+                ->columns(2),
 
-                // ── Seção: Dados Farmacêuticos ──────────────────────────
-                Forms\Components\Section::make('Dados Farmacêuticos')
-                    ->icon('heroicon-o-clipboard-document-list')
-                    ->visible(fn (Forms\Get $get) => $get('tipo') === 'medicamento')
-                    ->schema([
-                        Forms\Components\TextInput::make('principio_ativo')
-                            ->label('Princípio Ativo')
-                            ->maxLength(255)
-                            ->placeholder('Ex: Dipirona Monoidratada'),
+            // ── Estoque & Preço ─────────────────────────────────────
+            Forms\Components\Section::make('Estoque & Preço')
+                ->schema([
+                    Forms\Components\TextInput::make('preco')
+                        ->label('Preço')
+                        ->required()
+                        ->numeric()
+                        ->prefix('R$')
+                        ->default(0.00)
+                        ->minValue(0)
+                        ->step(0.01),
 
-                        Forms\Components\Toggle::make('controlado')
-                            ->label('Medicamento Controlado / Tarja Preta')
-                            ->helperText('Ative para medicamentos que exigem receita controlada.')
-                            ->onColor('danger')
-                            ->offColor('success')
-                            ->inline(false),
-                    ])
-                    ->columns(2),
-
-              
-                // ── Seção: Lote e Validade ──────────────────────────────
-                Forms\Components\Section::make('Lote e Validade')
-                    ->icon('heroicon-o-calendar-days')
-                    ->schema([
-                        Forms\Components\TextInput::make('lote')
-                            ->label('Lote de Fabricação')
-                            ->required()
-                            ->maxLength(100)
-                            ->placeholder('Ex: LOT-2024-0892'),
-
-                        Forms\Components\DatePicker::make('data_validade')
-                            ->label('Data de Validade')
-                            ->required()
-                            ->displayFormat('d/m/Y')
-                            ->minDate(now()),
-                    ])
-                    ->columns(2),
-
-            ]);
-    }
+                    Forms\Components\TextInput::make('quantidade')
+                        ->label('Quantidade')
+                        ->required()
+                        ->numeric()
+                        ->default(0)
+                        ->minValue(0)
+                        ->placeholder('Ex: 100'),
+                ])
+                ->columns(2),
+        ]);
+}
 
     public static function table(Table $table): Table
     {
@@ -130,54 +112,23 @@ class MedicamentoResource extends Resource
                     ->sortable()
                     ->wrap(),
 
-                Tables\Columns\BadgeColumn::make('tipo')
+                Tables\Columns\TextColumn::make('tipo')
                     ->label('Tipo')
-                    ->colors([
-                        'success' => 'medicamento',
-                        'info'    => 'perfumaria',
-                    ])
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'medicamento' => 'success',
+                        default       => 'gray',
+                    })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'medicamento' => 'Medicamento',
+                        'perfumaria'  => 'Perfumaria',
                         default       => $state,
                     }),
-
-                Tables\Columns\IconColumn::make('controlado')
-                    ->label('Controlado')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-exclamation-triangle')
-                    ->falseIcon('heroicon-o-check-circle')
-                    ->trueColor('danger')
-                    ->falseColor('success'),
-                    
-                Forms\Components\Select::make('controlado')
-                ->label('Medicamento Controlado / Tarja Preta')
-                ->options([
-                    1 => 'Sim',
-                    0 => 'Não',
-                ])
-                ->default(0)
-                ->required(),
 
                 Tables\Columns\TextColumn::make('fabricante')
                     ->label('Fabricante')
                     ->searchable()
                     ->toggleable(),
-
-                Tables\Columns\TextColumn::make('principio_ativo')
-                    ->label('Princípio Ativo')
-                    ->searchable()
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('lote')
-                    ->label('Lote')
-                    ->searchable()
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('data_validade')
-                    ->label('Validade')
-                    ->date('d/m/Y')
-                    ->sortable()
-                    ->color(fn ($record) => $record->data_validade->isPast() ? 'danger' : 'success'),
 
                 Tables\Columns\TextColumn::make('preco')
                     ->label('Preço')
@@ -190,9 +141,9 @@ class MedicamentoResource extends Resource
                     ->sortable()
                     ->badge()
                     ->color(fn (int $state): string => match (true) {
-                        $state === 0  => 'danger',
-                        $state < 10   => 'warning',
-                        default       => 'success',
+                        $state === 0 => 'danger',
+                        $state < 10  => 'warning',
+                        default      => 'success',
                     }),
 
                 Tables\Columns\TextColumn::make('created_at')
@@ -206,31 +157,6 @@ class MedicamentoResource extends Resource
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                SelectFilter::make('tipo')
-                    ->label('Tipo de Produto')
-                    ->options([
-                        'medicamento' => '💊 Medicamento',
-                        'perfumaria'  => '🧴 Perfumaria',
-                    ]),
-
-                TernaryFilter::make('controlado')
-                    ->label('Controlado / Tarja Preta')
-                    ->trueLabel('Somente Controlados')
-                    ->falseLabel('Não Controlados'),
-
-                Tables\Filters\Filter::make('vencidos')
-                    ->label('Vencidos')
-                    ->query(fn ($query) => $query->where('data_validade', '<', now())),
-
-                Tables\Filters\Filter::make('estoque_baixo')
-                    ->label('Estoque Baixo (< 10)')
-                    ->query(fn ($query) => $query->where('quantidade', '<', 10)),
-
-                Tables\Filters\Filter::make('sem_estoque')
-                    ->label('Sem Estoque')
-                    ->query(fn ($query) => $query->where('quantidade', 0)),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

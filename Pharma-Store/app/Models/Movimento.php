@@ -7,10 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 class Movimento extends Model
 {
     protected $fillable = [
-        'produto_id', 'quantidade', 'tipo'
+        'produto_id',
+        'tipo',
+        'quantidade',
+        'lote',
+        'data_validade',
+        'principio_ativo',
+        'controlado',
     ];
 
-    public function produto(){
-        return $this->belongsTo(Produto::class,'produto_id');
-    } //relacionamento um para muitos
+    public function medicamento()
+    {
+        return $this->belongsTo(Medicamento::class, 'produto_id');
+    }
 }

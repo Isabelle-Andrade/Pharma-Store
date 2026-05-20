@@ -20,9 +20,9 @@ class Medicamento extends Model
     ];
 
     protected $casts = [
-        'controlado'     => 'boolean',
-        'data_validade'  => 'date',
-        'preco'          => 'decimal:2',
+        'preco'         => 'decimal:2',
+        'data_validade' => 'date',
+        'controlado'    => 'boolean',
     ];
 
     /**
@@ -36,7 +36,7 @@ class Medicamento extends Model
     /**
      * Verifica se o estoque está baixo (menos de 10 unidades).
      */
-    public function estoquebaixo(): bool
+    public function estoqueBaixo(): bool
     {
         return $this->quantidade < 10;
     }

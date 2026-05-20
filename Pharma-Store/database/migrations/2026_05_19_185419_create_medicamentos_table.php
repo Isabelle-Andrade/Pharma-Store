@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('codigo')->unique();
             $table->string('nome');
             $table->string('fabricante'); // Fabricante/Fornecedor
-            $table->string('principio_ativo');
+            $table->string('principio_ativo')->nullable();
             $table->string('lote');
             $table->date('data_validade');
             $table->decimal('preco', 10, 2)->default(0.00);
